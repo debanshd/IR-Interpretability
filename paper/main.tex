@@ -134,13 +134,15 @@ F = \text{ReLU}(W_{enc}E_{deep} + b_{enc})
 Here, $W_{enc}$ projects the dense vector into an overcomplete $k$-dimensional space (where $k \gg d$, typically $k=4096$). Because relying on an $L_1$ penalty alone is often insufficient to guarantee robust monosemanticity and can degrade ranking, we incorporate a retrieval-preserving contrastive alignment objective during dictionary learning.
 
 \subsection{The Facet Dictionary and Resonance Score}
-Because each active dimension in $F$ represents an isolated concept, we use a secondary instruction-tuned LLM to generate human-readable Semantic Facets (e.g., Facet 1: Technical Intent). During retrieval, users adjust these facets via UI sliders, generating a dynamic Modifier Vector, $M \in \mathbb{R}^k$. The final Resonance Score Calculation is computed as a weighted dot product:
+Each active dimension in $F$ represents a single concept. We use a second LLM to generate clear Semantic Facets. During search, users adjust these facets with sliders to create a Modifier Vector $M \in \mathbb{R}^k$. The final Resonance Score is a weighted dot product:
 
 \begin{equation}
 S(q,d) = (F_q \odot M) \cdot F_d
 \end{equation}
 
-Because the Hadamard Product $(F_q \odot M)$ acts purely as a pre-scaling of the query vector's sparse activations, it is mathematically equivalent to a weighted dot product. $M$ can be folded entirely into the query vector at inference time, allowing compatibility with standard Approximate Nearest Neighbor (ANN) search libraries \cite{johnson2019}.
+The product $(F_q \odot M)$ scales the sparse activations of the query vector. This is equivalent to a weighted dot product. The system folds $M$ into the query vector during search. This allows compatibility with standard search libraries \cite{johnson2019}.
+
+\textbf{Interactive UI Model:} In a real search system, showing all $k=4096$ sliders is a large amount of information for a user. To make the system easy to use, the interface shows a simple view. When a user runs a query, the system shows sliders for the top three to five active parts of the query vector $F_q$. It shows the main parts found in the top ten retrieved documents. This limits the user choices to a small group of active concepts. For example, a user can slide to lower the weight for hardware and raise the weight for software during a technical search. This is easier than choosing from the entire set of sliders.
 
 \section{Experimental Setup}
 The code and resources to reproduce our experiments are publicly available at \url{https://github.com/debanshd/IR-Interpretability/tree/main}.
@@ -159,14 +161,19 @@ The ISR bottleneck is trained directly on the target corpus embeddings using a b
 \mathcal{L} = \text{MSE}(E, \text{Decoder}(F)) + \lambda_{L1} ||F||_1 + \lambda_{IP} \text{MSE}(\text{sim}_F, \text{sim}_E)
 \end{equation}
 
-This balances reconstruction fidelity (MSE), monosemantic sparsity ($L_1$), and topological distances required for accurate NDCG ranking (IP Loss).
+This loss balances three goals. It keeps the reconstructed vectors close to the original vectors. It encourages sparse features. It preserves the distance between vectors to keep the search rank stable.
 
 \subsection{Novel Evaluation Metrics}
-Alongside standard NDCG@10, we introduce two metrics specifically designed to measure operational interpretability:
+Alongside standard NDCG@10, we introduce two metrics designed to measure search interpretability:
 
 \begin{itemize}
-    \item \textbf{Diagnostic Traceability Score (DTS \%):} Mathematically measures latent intersection. Let $f_q^* = \arg\max(F_q)$ represent the absolute primary driving facet of the query, and $D_d^{top3}$ represent the indices of the three largest activation values in document vector $F_d$. DTS is the percentage of top-10 retrieved documents where $f_q^* \in D_d^{top3}$. For dense baselines, vectors are first mean-centered ($E' = E - \mu_E$) to remove global structural bias. Applying DTS to dense baselines serves as a negative control; defining a dense facet as the mean-centered argmax dimension mathematically quantifies the severe entanglement of the baseline space.
-    \item \textbf{Mean Correction Interactions (MCI):} Measures steerability via a programmatic simulation. The protocol selects a target document outside the top 10, identifies its dominant active facet, and amplifies that dimension in discrete $+2.0$ step increments (capped at 10) until the document enters the top 10. While lexical sparse baselines like SPLADE could theoretically be afforded term-boosting controls, lexical boosting is inherently bound to exact vocabulary matches, whereas ISR evaluates steering via abstract semantic concepts.
+    \item \textbf{Diagnostic Traceability Score (DTS \%):} This score measures how concepts overlap. Let $f_q^* = \arg\max(F_q)$ represent the main concept of the query. Let $D_d^{top3}$ represent the three largest values in the document vector $F_d$. DTS is the percentage of the top ten retrieved documents where $f_q^*$ is in $D_d^{top3}$. For dense models, we adjust the vectors to remove global bias. 
+    
+    \textit{Baseline Calibration Note:} We use DTS on dense models as a test to show how much their dimensions mix. This is not a direct comparison of search quality. We note that DTS favors sparse models by design because it counts how many concepts overlap. SPLADE uses words as concepts. Our system uses learned concepts that do not require exact word matches.
+    
+    \item \textbf{Mean Correction Interactions (MCI):} This metric measures how easy it is to steer the search. The test selects a target document outside the top ten. It finds the main concept of that document and increases its value in steps of two. The test stops when the document enters the top ten. 
+    
+    \textit{Baseline Applicability Note:} We cannot compute the MCI score for dense models. These models mix concepts in a way that users cannot adjust. There is no single slider for a user to change. SPLADE allows users to boost exact words. Our system allows users to steer abstract concepts.
 \end{itemize}
 
 \section{Results and Analysis}
@@ -213,7 +220,7 @@ Trec-covid & Contriever (Dense) & 0.3441 & 18.5 & N/A & - & 0.0\% (Dense) \\
 
 (Note: ArguAna and FIQA also maintained statistically non-significant NDCG variances while improving DTS\% substantially)
 
-ISR maintains baseline accuracy on most datasets; paired t-tests confirm NDCG differences are statistically not significant (ns). Simultaneously, ISR systematically outperforms SPLADE on DTS\% and introduces real-time steerability (MCI). Notably, NFCorpus exhibits a statistically significant penalty ($p=0.006$). This illustrates the highly entangled nature of medical latent spaces (e.g., "carcinoma" and "tumor"), which are too densely packed to separate without sacrificing topological accuracy.
+Our system shows search results similar to the baseline models on these groups of data. Statistical tests show the differences in rank quality are small. These tests suggest our system keeps the search order stable, though larger tests are needed to prove this. Our system performs better than SPLADE on the overlap test. It allows users to steer the search. The medical dataset NFCorpus shows a clear drop in search quality. This shows that medical concepts mix together and are hard to separate without losing search quality.
 
 \subsection{The Hyperparameter Tradeoff (The Pareto Frontier)}
 Achieving transparency requires navigating the tension between Interpretability ($\lambda_{L1}$) and Accuracy ($\lambda_{IP}$). Locking the IP penalty at 3.0 and increasing $\lambda_{L1}$ from $1.0\times 10^{-6}$ to $1.5\times 10^{-6}$ jumps DTS from 57.0\% to 83.5\% while maintaining a stable NDCG@10 (Table \ref{tab:hyperparam}).
@@ -266,13 +273,22 @@ While ISR provides unprecedented transparency, it introduces systemic bottleneck
 Simulating a dense FAISS \cite{johnson2019} IndexFlatL2 environment (batch size 1, NVIDIA T4), Contriever averages 12ms per query. ISR increases this to roughly 21ms due to the $W_{enc}$ projection overhead. Expanding to 4096 dimensions naively implies massive storage bloat, but the $\sim$97\% sparsity ratio requires only $\sim$123 active dimensions. Storing these non-zero values and indices requires only 984 bytes per document—a $\sim$68\% reduction compared to the 3,072 bytes required for dense baselines. Deploying this $\sim$984-byte representation into a physical sparse posting-list index (e.g., Lucene) is the requisite next step to realize these theoretical gains at scale.
 
 \subsection{Label Verification and Domain Brittleness}  
-We have not conducted formal human-in-the-loop validation to definitively prove LLM-generated facets map cleanly to cognitive concepts; future work will incorporate feature attribution (e.g., DeepSHAP \cite{fernando2019}). Furthermore, applying an SAE trained on a specific domain (e.g., FIQA) to a radically out-of-distribution dataset (e.g., TREC-COVID) risks severe facet brittleness, as the dictionary $W_{enc}$ will struggle to parse unfamiliar dense clusters.
+One limit of our work is that we use labels created by a language model. We have not tested these labels with real people to prove they match human thoughts. Other methods like DeepSHAP \cite{fernando2019} show which words are important. But they do not let users steer the search using general concepts. If we train the system on one topic and use it on a very different topic, the sliders might not work well because the system will not recognize the new concepts.
 
 \subsection{Deployment Guardrails and VA Integration} 
-Deploying highly steerable bottlenecks introduces operator overfitting risks and bias amplification. Practical deployments will have to establish default $M$ settings, enforce safe ranges, and maintain immutable provenance logs to enable automated rollbacks if retrieval quality drops. Drawing on visual analytics literature, future validation of ISR will be intended to move beyond simulated metrics to formal, task-based user studies measuring trust, time-to-resolution, and cognitive load.
+Allowing users to steer the search can lead to mistakes or biased results. A real system must set safe limits for the sliders. It must keep a record of all changes so users can undo them if the search quality drops.
 
-\section{Conclusion}
-The debugging limitations of dense neural IR arise from unconstrained latent vectors. ISR shows we can retain the semantic power of LLMs while restoring transparency and control. By bottlenecking embeddings into overcomplete sparse facets, we move from opaque vector similarity to interactive, steerable retrieval. Despite added latency, this design enables systems that are accurate, accountable, debuggable, and explicitly controllable in production settings.
+\subsection{Production Integration and Reindexing Feasibility}
+A major problem when deploying search models is the cost of reindexing. In traditional search, changing the weights of concepts requires retraining the model and reindexing the entire large document collection. This task requires a large amount of compute.
+
+Our system avoids this problem. Because the slider adjustments $M$ apply to the query, the document vectors $F_d$ do not change. This allows the system to run the steering step as a simple extra step after the search. During a search, the system encodes the query, applies the slider changes, and runs a dot product against the existing static index. This means our system works with existing search engines like FAISS or Milvus with no need to reindex the documents. This makes the system easy to deploy.
+
+\textbf{Model Updates and Version Management:} In a real search system, new documents are added over time. This can change the concepts, requiring us to train the model again. Training the model again can change the meaning of the sliders. For example, Slider 802 in the old version might not match Slider 802 in the new version. This would break the saved settings of the user. To fix this, we propose a translation layer. When we deploy a new version, we compute a map that links the new sliders back to the old sliders. This ensures that user settings remain stable across updates without the need to label the sliders again.
+
+\section{Conclusion and Future Work}
+The debugging limits of dense neural search come from unconstrained latent vectors. Our system shows we can keep the semantic power of LLMs while restoring transparency and control. By putting embeddings into sparse facets, we move from black box vector similarity to interactive, steerable search. Despite added latency, this design enables search systems that are accurate, accountable, easy to debug, and controllable.
+
+In future work, we plan to improve this system in three ways. First, we will run tests with real people. This includes tests to verify that the labels match human thoughts and studies to measure if the sliders are easy for users to operate. Second, we want to make the system work better on new topics by improving how the model adapts. Third, we plan to test our system in tools like Lucene to prove the speed and storage gains on very large datasets.
 
 \section*{Presenter Bio and Format Preference}
 \textbf{Format Preference:} Paper presentation (Talk).
