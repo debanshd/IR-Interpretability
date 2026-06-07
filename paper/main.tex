@@ -1,4 +1,4 @@
-\documentclass[sigconf,authordraft]{acmart}
+\documentclass[manuscript,anonymous]{acmart}
 
 %% Rights management information.
 \setcopyright{acmlicensed}
@@ -145,7 +145,7 @@ The product $(F_q \odot M)$ scales the sparse activations of the query vector. T
 \textbf{Interactive UI Model:} In a real search system, showing all $k=4096$ sliders is a large amount of information for a user. To make the system easy to use, the interface shows a simple view. When a user runs a query, the system shows sliders for the top three to five active parts of the query vector $F_q$. It shows the main parts found in the top ten retrieved documents. This limits the user choices to a small group of active concepts. For example, a user can slide to lower the weight for hardware and raise the weight for software during a technical search. This is easier than choosing from the entire set of sliders.
 
 \section{Experimental Setup}
-The code and resources to reproduce our experiments are publicly available at \url{https://github.com/debanshd/IR-Interpretability/tree/main}.
+The code and resources to reproduce our experiments are available in an anonymized repository at \url{https://anonymous.4open.science/r/IR-Interpretability-Anonymous}.
 
 \subsection{Datasets, Baselines, and Hardware Requirements}
 We evaluate ISR across five BEIR subsets \cite{thakur2021} (SciDocs, ArguAna, NFCorpus, FIQA, TREC-COVID) against Contriever (Dense), ColBERTv2.0 \cite{khattab2020} (Late-Interaction), and SPLADE \cite{formal2021} (Sparse Lexical).
@@ -290,10 +290,6 @@ The debugging limits of dense neural search come from unconstrained latent vecto
 
 In future work, we plan to improve this system in three ways. First, we will run tests with real people. This includes tests to verify that the labels match human thoughts and studies to measure if the sliders are easy for users to operate. Second, we want to make the system work better on new topics by improving how the model adapts. Third, we plan to test our system in tools like Lucene to prove the speed and storage gains on very large datasets.
 
-\section*{Presenter Bio and Format Preference}
-\textbf{Format Preference:} Paper presentation (Talk).
-
-\textbf{Presenter Bio (Debanshu Das):} Debanshu Das is an Engineer and Technical Lead at Google. He works on generative-AI driven solutions for large-scale recommendation systems in the context of creative advertising on YouTube. His projects span generative AI, agentic workflows, large-scale recommendation engines, and cloud-native distributed systems. Prior to Google, Debanshu worked at Oracle and Apple and his work was a combination of theoretical research and production-grade system design. An IEEE Senior Member, his research has been accepted at leading venues including AAAI and WSDM. He holds a Master’s degree from Carnegie Mellon University.
 
 \section*{Statement of AI Use}
 The authors acknowledge the use of Gemini AI to refine the text, code and generate the images included in this paper.
