@@ -113,10 +113,10 @@ Rather than redesigning encoders, ISR focuses on integration, debuggability, and
 \begin{figure*}[htbp]
   \vspace{-5pt}
   \centering
-  \includegraphics[width=0.62\textwidth]{fig1.png}
+  \includegraphics[width=0.50\textwidth]{fig1.png}
   \caption{The ISR Architecture. Document text is processed by a standard LLM encoder into an entangled dense embedding ($E_{deep}$). The ISR Sparse Bottleneck Layer decomposes this black box into isolated, human readable Semantic Facets. During retrieval, users adjust these facets via UI sliders (User Control), dynamically scaling the Resonance Score Calculation to produce interpretable search results.}
   \label{fig:isr}
-  \vspace{-12pt}
+  \vspace{-16pt}
 \end{figure*}
 
 \section{Related Work}
@@ -211,6 +211,46 @@ The product $(F_q \odot M)$ scales the sparse activations of the query vector. T
 
 \textbf{Interactive UI Model:} In a real search system, showing all $k=4096$ sliders is a large amount of information for a user. To make the system easy to use, the interface shows a simple view. When a user runs a query, the system shows sliders for the top three to five active parts of the query vector $F_q$. It shows the main parts found in the top ten retrieved documents. This limits the user choices to a small group of active concepts. For example, a user can slide to lower the weight for hardware and raise the weight for software during a technical search. This is easier than choosing from the entire set of sliders.
 
+\begin{table*}[htbp]
+\centering
+\caption{Retrieval, Controllability, and Hardware Footprint Across BEIR Subsets. Statistical significance is assessed via query level paired t tests against the Contriever base model: (ns) nonsignificant, * $p < 0.05$, ** $p < 0.01$, and *** $p < 0.001$.}
+\vspace{-4pt}
+\label{tab:beir_results}
+\small
+\renewcommand{\arraystretch}{0.80}
+\begin{tabular}{llrlrlr}
+\toprule
+Dataset & Model & NDCG@10 & DTS (\%) & MCI & p value & Zero Values (\%) \\
+\midrule
+Scidocs & Contriever (Dense) & 0.5615 & 1.0 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.6105 & 5.0 & N/A & 0.168 (ns) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.5979 & 14.5 & N/A & 0.325 (ns) & 99.4\% \\
+& ISR Contriever (Ours) & 0.5610 & 28.0 & 8.5 & 0.958 (ns) & 96.5\% \\
+\midrule
+Arguana & Contriever (Dense) & 0.4628 & 15.0 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.4553 & 13.0 & N/A & 0.826 (ns) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.5042 & 27.0 & N/A & 0.276 (ns) & 99.4\% \\
+& ISR Contriever (Ours) & 0.4390 & 41.5 & 4.0 & 0.148 (ns) & 96.9\% \\
+\midrule
+Nfcorpus & Contriever (Dense) & 0.5928 & 0.0 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.5747 & 5.0 & N/A & 0.621 (ns) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.6563 & 21.0 & N/A & 0.133 (ns) & 99.3\% \\
+& ISR Contriever (Ours) & 0.5300 & 45.5 & 9.0 & 0.006 (**) & 97.5\% \\
+\midrule
+Fiqa & Contriever (Dense) & 0.6141 & 1.0 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.7263 & 1.5 & N/A & 0.126 (ns) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.7747 & 22.0 & N/A & 0.016 (*) & 99.5\% \\
+& ISR Contriever (Ours) & 0.6201 & 36.0 & 6.0 & 0.642 (ns) & 96.4\% \\
+\midrule
+Trec COVID & Contriever (Dense) & 0.3441 & 18.5 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.9463 & 9.5 & N/A & 0.000 (***) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.9210 & 39.5 & N/A & 0.000 (***) & 99.3\% \\
+& ISR Contriever (Ours) & 0.3563 & 95.5 & 10.0 & 0.806 (ns) & 99.5\% \\
+\bottomrule
+\end{tabular}
+\vspace{-10pt}
+\end{table*}
+
 \section{Experimental Setup}
 The code and resources to reproduce our experiments are available in an anonymized repository at \url{https://anonymous.4open.science/r/IR-Interpretability-5DFA}.
 
@@ -253,46 +293,6 @@ In this section, we evaluate the ISR framework's ability to balance robust retri
 \vspace{-2pt}
 Imposing a sparse bottleneck results in a statistically acceptable degradation in zero shot ranking performance while yielding measurable improvements in traceability (Table \ref{tab:beir_results}) with bounded ranking degradation. In production contexts, such bounded tradeoffs are often preferable to opaque performance gains, as they allow maintainers to diagnose and correct retrieval drift without retraining. Absolute NDCG values differ from leaderboard benchmarks due to subset sampling; relative comparisons remain valid under paired evaluation. Statistical significance was assessed via query level paired t tests; notably, ArguAna and FIQA maintained statistically nonsignificant NDCG variances while improving DTS\% substantially. However, the medical dataset NFCorpus exhibits a more pronounced drop in ranking quality, suggesting that highly specialized clinical concepts are prone to semantic entanglement, making them harder to decompose into sparse representation facets without a corresponding loss in retrieval precision.
 
-\begin{table*}[htbp]
-\centering
-\caption{Retrieval, Controllability, and Hardware Footprint Across BEIR Subsets. Statistical significance is assessed via query level paired t tests against the Contriever base model: (ns) nonsignificant, * $p < 0.05$, ** $p < 0.01$, and *** $p < 0.001$.}
-\vspace{-4pt}
-\label{tab:beir_results}
-\small
-\renewcommand{\arraystretch}{0.82}
-\begin{tabular}{llrlrlr}
-\toprule
-Dataset & Model & NDCG@10 & DTS (\%) & MCI & p value & Zero Values (\%) \\
-\midrule
-Scidocs & Contriever (Dense) & 0.5615 & 1.0 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.6105 & 5.0 & N/A & 0.168 (ns) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.5979 & 14.5 & N/A & 0.325 (ns) & 99.4\% \\
-& ISR Contriever (Ours) & 0.5610 & 28.0 & 8.5 & 0.958 (ns) & 96.5\% \\
-\midrule
-Arguana & Contriever (Dense) & 0.4628 & 15.0 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.4553 & 13.0 & N/A & 0.826 (ns) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.5042 & 27.0 & N/A & 0.276 (ns) & 99.4\% \\
-& ISR Contriever (Ours) & 0.4390 & 41.5 & 4.0 & 0.148 (ns) & 96.9\% \\
-\midrule
-Nfcorpus & Contriever (Dense) & 0.5928 & 0.0 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.5747 & 5.0 & N/A & 0.621 (ns) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.6563 & 21.0 & N/A & 0.133 (ns) & 99.3\% \\
-& ISR Contriever (Ours) & 0.5300 & 45.5 & 9.0 & 0.006 (**) & 97.5\% \\
-\midrule
-Fiqa & Contriever (Dense) & 0.6141 & 1.0 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.7263 & 1.5 & N/A & 0.126 (ns) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.7747 & 22.0 & N/A & 0.016 (*) & 99.5\% \\
-& ISR Contriever (Ours) & 0.6201 & 36.0 & 6.0 & 0.642 (ns) & 96.4\% \\
-\midrule
-Trec COVID & Contriever (Dense) & 0.3441 & 18.5 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.9463 & 9.5 & N/A & 0.000 (***) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.9210 & 39.5 & N/A & 0.000 (***) & 99.3\% \\
-& ISR Contriever (Ours) & 0.3563 & 95.5 & 10.0 & 0.806 (ns) & 99.5\% \\
-\bottomrule
-\end{tabular}
-\vspace{-10pt}
-\end{table*}
-
 
 \subsection{Tradeoff Analysis and Ablation Studies}
 \vspace{-2pt}
@@ -310,23 +310,24 @@ For the SciDocs query [Algorithms for low power wireless sensor networks], the b
 \vspace{-2pt}
 \textbf{System Overhead and Storage Mitigations:} While ISR increases query latency from 12ms to 21ms on an NVIDIA T4, its 97\% sparsity reduces the storage footprint. Storing only 123 active dimensions requires 984 bytes per document—a 68\% reduction compared to the 3,072 bytes of dense baselines—enabling highly efficient inverted index storage.
 
-\textbf{Label Verification and Domain Brittleness:} We rely on LLM generated labels without human validation. While methods like DeepSHAP \cite{fernando2019study} show feature importance, they lack steerability. Furthermore, if evaluated on out of domain topics, the pretrained SAE facets may fail to generalize.
+\textbf{Label Verification and Domain Brittleness:} We leverage LLM generated labels without human validation. While post-hoc explainers like DeepSHAP \cite{fernando2019study} quantify feature importance, they lack steerability. Additionally, the pretrained dictionary may exhibit domain brittleness on out of domain topics.
 
-\textbf{Deployment Guardrails and VA Integration:} Steering the search can lead to mistakes or biased results. A real system must set safe limits for the sliders and keep a record of all changes to allow users to undo them if the search quality drops.
+\textbf{Deployment Guardrails and VA Integration:} Steering can introduce user bias or ranking distortions. Production systems must enforce slider caps, maintain audit logs, and provide quick previews to safeguard retrieval quality.
 
-\textbf{Production Integration and Reindexing Feasibility:} Traditional steerable search requires costly reindexing of the entire corpus upon model updates. ISR bypasses this by applying the modifier vector $M$ exclusively to the query representation at retrieval time, leaving the document index ($F_d$) static. This enables real time steering on top of existing vector databases (e.g., FAISS, Milvus) without reindexing.
+\textbf{Production Integration and Reindexing Feasibility:} Traditional steerable search requires costly corpus reindexing. ISR bypasses this by applying $M$ exclusively to the query at retrieval time, leaving the document index ($F_d$) static. This enables real time steering on top of FAISS or Milvus without reindexing.
 
-\textbf{Model Updates and Version Management:} Retraining the dictionary on new document distributions can shift latent facet mappings, breaking saved user settings. To ensure version compatibility, we propose a lightweight translation layer that maps newly trained facets back to the historical slider configuration, preserving user steering states across updates.
+\textbf{Model Updates and Version Management:} Retraining dictionaries on new corpora shifts latent facet mappings, breaking user settings. We propose a lightweight translation layer to map newly trained facets back to historical slider configurations, preserving steering states across updates.
 
-\vspace{-4pt}
+\vspace{-6pt}
 \section{Conclusion and Future Work}
-The debugging limits of dense neural search stem from unconstrained latent vectors. ISR demonstrates that we can preserve the semantic power of deep representation models while restoring operational transparency and control. By decomposing dense embeddings into sparse semantic facets, we transition from black box vector similarity to an interactive, steerable retrieval interface. Future work will focus on user studies to validate slider usability, improving out of domain adaptation, and integrating with engines like Lucene to evaluate large scale indexing efficiency.
+\vspace{-2pt}
+ISR demonstrates that we can preserve the semantic power of dense representation models while restoring operational transparency and control. By decomposing dense embeddings into sparse semantic facets, we transition from black box vector similarity to an interactive, steerable retrieval interface. Future work will focus on user studies to validate slider usability and evaluating large scale indexing efficiency in Lucene.
 
 
-\vspace{-4pt}
+\vspace{-8pt}
 \section*{Statement of AI Use}
 The authors acknowledge the use of Gemini AI to refine the text, code and generate the images included in this paper.
-\vspace{-6pt}
+\vspace{-8pt}
 \setlength{\bibsep}{0.0pt plus 0.3pt}
 \footnotesize
 \let\oldthebibliography\thebibliography
