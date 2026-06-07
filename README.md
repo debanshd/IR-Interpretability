@@ -3,9 +3,9 @@
 [![Conference](https://img.shields.io/badge/SIGIR-2026-blue)](https://sigir.org/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 
-**Authors:** Vinay Venkatesh (Google), Debanshu Das (Google), Surbhi Motghare (Salesforce)
+**Authors:** Anonymous Author(s)
 
-This repository contains the code and reproducibility resources for the paper **"Beyond the Vector Black Box: Toward Interpretable Semantic Resonance in Neural Information Retrieval"**, accepted at **SIGIR '26**.
+This repository contains the code and reproducibility resources for the paper **"Beyond the Vector Black Box: Toward Interpretable Semantic Resonance in Neural Information Retrieval"**, currently under review.
 
 ## Abstract
 
@@ -51,8 +51,8 @@ Our framework (ISR) introduces interpretability and steerability with minimal de
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/debanshd/IR-Interpretability.git
-    cd IR-Interpretability
+    git clone https://anonymous.4open.science/r/IR-Interpretability-Anonymous
+    cd IR-Interpretability-Anonymous
     ```
 
 2.  **Install dependencies:**
@@ -66,18 +66,8 @@ Our framework (ISR) introduces interpretability and steerability with minimal de
 
 ## Citation
 
-If you use this code or findings in your research, please cite our SIGIR '26 paper:
-
 ```bibtex
-@inproceedings{venkatesh2026beyond,
-  title={Beyond the Vector Black Box: Toward Interpretable Semantic Resonance in Neural Information Retrieval},
-  author={Venkatesh, Vinay and Das, Debanshu and Motghare, Surbhi},
-  booktitle={Proceedings of the 49th International ACM SIGIR Conference on Research and Development in Information Retrieval},
-  year={2026},
-  publisher={ACM},
-  address={Melbourne, Australia},
-  doi={XXXXXXX.XXXXXXX}
-}
+% Citation anonymized during review
 ```
 
 ## Statement of AI Use
