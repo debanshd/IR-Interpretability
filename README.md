@@ -1,6 +1,5 @@
 # Beyond the Vector Black Box: Toward Interpretable Semantic Resonance in Neural Information Retrieval
 
-[![Conference](https://img.shields.io/badge/SIGIR-2026-blue)](https://sigir.org/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 
 **Authors:** Anonymous Author(s)
