@@ -127,15 +127,53 @@ Concurrently, sparse models like SPLADE \cite{formal2021splade} and EPIC \cite{m
 Our system combines these architectures with visual analytics principles like semantic interaction and steering \cite{endert2014human} and conversational search frameworks \cite{radlinski2017framework} by introducing a query side modifier for debuggability.
 
 \section{Operational Limitations in Dense Retrieval}
-Dense retrievers cluster semantically similar documents into high dimensional neighborhoods \cite{reimers2019sentence}. While beneficial for recall, this clustering can entangle multiple concepts. When irrelevant results appear, maintainers lack deterministic mechanisms to adjust specific semantic influences. Common mitigation strategies include:
-
-Common mitigation strategies include hard negative mining \cite{karpukhin2020dense, xiong2021ance}, domain specific finetuning, or encoder replacement.
+Dense retrievers cluster semantically similar documents into high dimensional neighborhoods \cite{reimers2019sentence}. While beneficial for recall, this clustering can entangle multiple concepts. When irrelevant results appear, maintainers lack deterministic mechanisms to adjust specific semantic influences. Common mitigation strategies include hard negative mining \cite{karpukhin2020dense, xiong2021ance}, domain specific finetuning, or encoder replacement.
 
 These approaches introduce compute cost and regression risk. Standard metrics like NDCG@10 measure rank quality but do not measure traceability or controllability.
 
 ISR addresses this limitation by introducing a sparse semantic bottleneck that exposes discrete facets and supports targeted ranking adjustments.
 
 \vspace{-6pt}
+\begin{table*}[htbp]
+\centering
+\caption{Retrieval, Controllability, and Hardware Footprint Across BEIR Subsets. Statistical significance is assessed via query level paired t tests against the Contriever base model: (ns) nonsignificant, * $p < 0.05$, ** $p < 0.01$, and *** $p < 0.001$.}
+\vspace{-4pt}
+\label{tab:beir_results}
+\small
+\renewcommand{\arraystretch}{0.80}
+\begin{tabular}{llrlrlr}
+\toprule
+Dataset & Model & NDCG@10 & DTS (\%) & MCI & p value & Zero Values (\%) \\
+\midrule
+Scidocs & Contriever (Dense) & 0.5615 & 1.0 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.6105 & 5.0 & N/A & 0.168 (ns) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.5979 & 14.5 & N/A & 0.325 (ns) & 99.4\% \\
+& ISR Contriever (Ours) & 0.5610 & 28.0 & 8.5 & 0.958 (ns) & 96.5\% \\
+\midrule
+Arguana & Contriever (Dense) & 0.4628 & 15.0 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.4553 & 13.0 & N/A & 0.826 (ns) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.5042 & 27.0 & N/A & 0.276 (ns) & 99.4\% \\
+& ISR Contriever (Ours) & 0.4390 & 41.5 & 4.0 & 0.148 (ns) & 96.9\% \\
+\midrule
+Nfcorpus & Contriever (Dense) & 0.5928 & 0.0 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.5747 & 5.0 & N/A & 0.621 (ns) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.6563 & 21.0 & N/A & 0.133 (ns) & 99.3\% \\
+& ISR Contriever (Ours) & 0.5300 & 45.5 & 9.0 & 0.006 (**) & 97.5\% \\
+\midrule
+Fiqa & Contriever (Dense) & 0.6141 & 1.0 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.7263 & 1.5 & N/A & 0.126 (ns) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.7747 & 22.0 & N/A & 0.016 (*) & 99.5\% \\
+& ISR Contriever (Ours) & 0.6201 & 36.0 & 6.0 & 0.642 (ns) & 96.4\% \\
+\midrule
+Trec COVID & Contriever (Dense) & 0.3441 & 18.5 & N/A & - & 0.0\% (Dense) \\
+& ColBERTv2.0 (Dense) & 0.9463 & 9.5 & N/A & 0.000 (***) & 0.0\% (Dense) \\
+& SPLADE (Sparse) & 0.9210 & 39.5 & N/A & 0.000 (***) & 99.3\% \\
+& ISR Contriever (Ours) & 0.3563 & 95.5 & 10.0 & 0.806 (ns) & 99.5\% \\
+\bottomrule
+\end{tabular}
+\vspace{-10pt}
+\end{table*}
+
 \begin{table*}[htbp]
 \begin{minipage}{0.48\textwidth}
 \centering
@@ -211,46 +249,6 @@ The product $(F_q \odot M)$ scales the sparse activations of the query vector. T
 
 \textbf{Interactive UI Model:} In a real search system, showing all $k=4096$ sliders is a large amount of information for a user. To make the system easy to use, the interface shows a simple view. When a user runs a query, the system shows sliders for the top three to five active parts of the query vector $F_q$. It shows the main parts found in the top ten retrieved documents. This limits the user choices to a small group of active concepts. For example, a user can slide to lower the weight for hardware and raise the weight for software during a technical search. This is easier than choosing from the entire set of sliders.
 
-\begin{table*}[htbp]
-\centering
-\caption{Retrieval, Controllability, and Hardware Footprint Across BEIR Subsets. Statistical significance is assessed via query level paired t tests against the Contriever base model: (ns) nonsignificant, * $p < 0.05$, ** $p < 0.01$, and *** $p < 0.001$.}
-\vspace{-4pt}
-\label{tab:beir_results}
-\small
-\renewcommand{\arraystretch}{0.80}
-\begin{tabular}{llrlrlr}
-\toprule
-Dataset & Model & NDCG@10 & DTS (\%) & MCI & p value & Zero Values (\%) \\
-\midrule
-Scidocs & Contriever (Dense) & 0.5615 & 1.0 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.6105 & 5.0 & N/A & 0.168 (ns) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.5979 & 14.5 & N/A & 0.325 (ns) & 99.4\% \\
-& ISR Contriever (Ours) & 0.5610 & 28.0 & 8.5 & 0.958 (ns) & 96.5\% \\
-\midrule
-Arguana & Contriever (Dense) & 0.4628 & 15.0 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.4553 & 13.0 & N/A & 0.826 (ns) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.5042 & 27.0 & N/A & 0.276 (ns) & 99.4\% \\
-& ISR Contriever (Ours) & 0.4390 & 41.5 & 4.0 & 0.148 (ns) & 96.9\% \\
-\midrule
-Nfcorpus & Contriever (Dense) & 0.5928 & 0.0 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.5747 & 5.0 & N/A & 0.621 (ns) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.6563 & 21.0 & N/A & 0.133 (ns) & 99.3\% \\
-& ISR Contriever (Ours) & 0.5300 & 45.5 & 9.0 & 0.006 (**) & 97.5\% \\
-\midrule
-Fiqa & Contriever (Dense) & 0.6141 & 1.0 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.7263 & 1.5 & N/A & 0.126 (ns) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.7747 & 22.0 & N/A & 0.016 (*) & 99.5\% \\
-& ISR Contriever (Ours) & 0.6201 & 36.0 & 6.0 & 0.642 (ns) & 96.4\% \\
-\midrule
-Trec COVID & Contriever (Dense) & 0.3441 & 18.5 & N/A & - & 0.0\% (Dense) \\
-& ColBERTv2.0 (Dense) & 0.9463 & 9.5 & N/A & 0.000 (***) & 0.0\% (Dense) \\
-& SPLADE (Sparse) & 0.9210 & 39.5 & N/A & 0.000 (***) & 99.3\% \\
-& ISR Contriever (Ours) & 0.3563 & 95.5 & 10.0 & 0.806 (ns) & 99.5\% \\
-\bottomrule
-\end{tabular}
-\vspace{-10pt}
-\end{table*}
-
 \section{Experimental Setup}
 The code and resources to reproduce our experiments are available in an anonymized repository at \url{https://anonymous.4open.science/r/IR-Interpretability-5DFA}.
 
@@ -308,7 +306,7 @@ For the SciDocs query [Algorithms for low power wireless sensor networks], the b
 
 \section{Operational Constraints and Drawbacks}
 \vspace{-2pt}
-\textbf{System Overhead and Storage Mitigations:} While ISR increases query latency from 12ms to 21ms on an NVIDIA T4, its 97\% sparsity reduces the storage footprint. Storing only 123 active dimensions requires 984 bytes per document—a 68\% reduction compared to the 3,072 bytes of dense baselines—enabling highly efficient inverted index storage.
+\textbf{System Overhead and Storage Mitigations:} While ISR increases query latency from 12ms to 21ms on an NVIDIA T4, its 97\% sparsity reduces the storage footprint. Storing only 123 active dimensions requires 984 bytes per document (a 68\% reduction compared to the 3,072 bytes of dense baselines) enabling highly efficient inverted index storage.
 
 \textbf{Label Verification and Domain Brittleness:} We leverage LLM generated labels without human validation. While post-hoc explainers like DeepSHAP \cite{fernando2019study} quantify feature importance, they lack steerability. Additionally, the pretrained dictionary may exhibit domain brittleness on out of domain topics.
 
